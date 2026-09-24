@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, shallowRef, toRaw, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 import type { WorkflowId, WorkflowNodeTypes } from '@/types/workflow'
 import { validateNodeDraft } from '@/utils/validation'
-import { NODE_COLORS, NODE_ICONS, NODE_SUMMARIES, getDescription, getTitle } from '@/utils/workflow'
+import { NODE_COLORS, NODE_ICONS, NODE_SUMMARIES, cloneNode, getDescription, getTitle } from '@/utils/workflow'
 import SendMessageEditor from './SendMessageEditor.vue'
 import CommentEditor from './CommentEditor.vue'
 import BusinessHoursEditor from './BusinessHoursEditor.vue'
@@ -20,16 +20,16 @@ const isConfirmOpen = shallowRef(false)
 const title = computed(() => props.node && getTitle(props.node))
 
 watch(() => props.node, (node) => {
-    draft.value = node && { ...structuredClone(toRaw(node)), name: getTitle(node) }
+    draft.value = node && { ...cloneNode(node), name: getTitle(node) }
 }, { immediate: true })
 
 function save() {
     if (!draft.value) return
-    emit('save', {
+    emit('save', cloneNode({
         ...draft.value,
         name: draft.value.name?.trim(),
         description: draft.value.description?.trim() || undefined,
-    })
+    }))
 }
 
 function confirmDelete() {

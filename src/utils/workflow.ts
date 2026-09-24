@@ -1,5 +1,5 @@
 import type { Edge, Node, XYPosition } from '@vue-flow/core'
-import type { WorkflowId, WorkflowNodeFormTypes, WorkflowNodeTypes } from '@/types/workflow'
+import type { WorkflowNodeTypes } from '@/types/workflow'
 
 const DEFAULT_TITLES: Record<WorkflowNodeTypes['type'], string> = {
     trigger: 'Trigger',
@@ -97,46 +97,6 @@ export function toFlowEdges(nodes: WorkflowNodeTypes[]): Edge[] {
     })
 }
 
-const WEEK_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
-
-export function createId() {
-    return crypto.randomUUID().slice(0, 6)
-}
-
-export function createNodes(form: Required<WorkflowNodeFormTypes>, parentId: WorkflowId): WorkflowNodeTypes[] {
-    const node = {
-        id: createId(),
-        parentId,
-        name: form.title.trim(),
-        description: form.description.trim() || undefined,
-    }
-
-    if (form.type === 'sendMessage') return [{ ...node, type: 'sendMessage', data: { payload: [] } }]
-    if (form.type === 'addComment') return [{ ...node, type: 'addComment', data: { comment: '' } }]
-
-    return [
-        {
-            ...node,
-            type: 'dateTime',
-            data: {
-                times: WEEK_DAYS.map((day) => ({ day, startTime: '09:00', endTime: '17:00' })),
-                timezone: 'UTC',
-            },
-        },
-        { id: createId(), parentId: node.id, name: 'Success', type: 'dateTimeConnector', data: { connectorType: 'success' } },
-        { id: createId(), parentId: node.id, name: 'Failure', type: 'dateTimeConnector', data: { connectorType: 'failure' } },
-    ]
-}
-
-export function insertNodes(nodes: WorkflowNodeTypes[], newNodes: WorkflowNodeTypes[], parentId: WorkflowId) {
-    const [first, success] = newNodes
-    const tail = first?.type === 'dateTime' ? success : first
-    if (!tail) return nodes
-
-    const moved = nodes.map((node) => node.parentId === parentId ? { ...node, parentId: tail.id } : node)
-    return [...moved, ...newNodes]
-}
-
 export function canAddAfter(node: WorkflowNodeTypes) {
     return node.type !== 'dateTime'
 }
@@ -146,25 +106,6 @@ export function findLastLeaf(nodes: WorkflowNodeTypes[]) {
     return nodes.filter((node) => !parentIds.has(node.id) && canAddAfter(node)).at(-1)
 }
 
-export function findNodeById(nodes: WorkflowNodeTypes[], id: string) {
-    return nodes.find((node) => String(node.id) === id)
-}
-
-export function replaceNode(nodes: WorkflowNodeTypes[], updated: WorkflowNodeTypes) {
-    return nodes.map((node) => node.id === updated.id ? updated : node)
-}
-
-export function removeSubtree(nodes: WorkflowNodeTypes[], id: WorkflowId) {
-    const removed = new Set<WorkflowId>([id])
-
-    function collect(parentId: WorkflowId) {
-        for (const node of nodes) {
-            if (node.parentId !== parentId) continue
-            removed.add(node.id)
-            collect(node.id)
-        }
-    }
-
-    collect(id)
-    return nodes.filter((node) => !removed.has(node.id))
+export function cloneNode(node: WorkflowNodeTypes): WorkflowNodeTypes {
+    return JSON.parse(JSON.stringify(node))
 }

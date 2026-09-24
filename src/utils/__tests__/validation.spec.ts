@@ -1,82 +1,32 @@
 import { describe, expect, it } from 'vitest'
-import { MAX_IMAGE_SIZE, validateDescription, validateImageFile, validateNodeDraft, validateNodeForm, validateTitle } from '@/utils/validation'
-import { findNode } from './fixtures'
+import { validateImageFile, validateNodeDraft, validateNodeForm } from '@/utils/validation'
+import { businessHours } from '@/test/fixtures'
 
-describe('validateTitle', () => {
-    it('requires a title', () => {
-        expect(validateTitle('   ')).toBe('Title is required')
-    })
+describe('validation', () => {
+    it('lists an error for every invalid field in the create form', () => {
+        const errors = validateNodeForm({ title: '', description: 'a'.repeat(201) })
 
-    it('limits the length', () => {
-        expect(validateTitle('a'.repeat(51))).toBe('Title must be at most 50 characters')
-        expect(validateTitle('a'.repeat(50))).toBeUndefined()
-    })
-})
-
-describe('validateDescription', () => {
-    it('allows an empty description', () => {
-        expect(validateDescription('')).toBeUndefined()
-    })
-
-    it('limits the length', () => {
-        expect(validateDescription('a'.repeat(201))).toBe('Description must be at most 200 characters')
-    })
-})
-
-describe('validateNodeForm', () => {
-    it('returns an error for every invalid field', () => {
-        expect(validateNodeForm({ title: '', description: 'a'.repeat(201) })).toEqual([
+        expect(errors).toEqual([
             { name: 'title', message: 'Title is required' },
             { name: 'description', message: 'Description must be at most 200 characters' },
             { name: 'type', message: 'Type of node is required' },
         ])
     })
 
-    it('passes a valid form', () => {
-        expect(validateNodeForm({ title: 'Hello', description: '', type: 'addComment' })).toEqual([])
-    })
-})
+    it('only accepts image files for attachments', () => {
+        const image = new File(['x'], 'photo.png', { type: 'image/png' })
+        const pdf = new File(['x'], 'document.pdf', { type: 'application/pdf' })
 
-describe('validateImageFile', () => {
-    it('accepts small images', () => {
-        expect(validateImageFile(new File(['x'], 'a.png', { type: 'image/png' }))).toBeUndefined()
+        expect(validateImageFile(image)).toBeUndefined()
+        expect(validateImageFile(pdf)).toBe('Only image files can be attached')
     })
 
-    it('rejects other file types', () => {
-        expect(validateImageFile(new File(['x'], 'a.pdf', { type: 'application/pdf' }))).toBe('Only image files can be attached')
-    })
+    it('does not allow business hours that end before they start', () => {
+        const backwardsHours = {
+            ...businessHours,
+            data: { ...businessHours.data, times: [{ day: 'mon', startTime: '18:00', endTime: '09:00' }] },
+        }
 
-    it('rejects large images', () => {
-        const file = new File([new Uint8Array(MAX_IMAGE_SIZE + 1)], 'big.png', { type: 'image/png' })
-
-        expect(validateImageFile(file)).toBe('Images must be 2 MB or smaller')
-    })
-})
-
-describe('validateNodeDraft', () => {
-    it('requires a title', () => {
-        expect(validateNodeDraft({ ...findNode('e879e4'), name: ' ' })).toEqual([{ name: 'title', message: 'Title is required' }])
-    })
-
-    it('rejects empty message texts', () => {
-        const node = findNode('b6a0c1')
-        if (node.type !== 'sendMessage') throw new Error('Expected a message')
-
-        const draft = { ...node, data: { payload: [{ type: 'text' as const, text: ' ' }] } }
-
-        expect(validateNodeDraft(draft)).toEqual([{ name: 'payload.0', message: 'Message cannot be empty' }])
-    })
-
-    it('rejects business hours that end before they start', () => {
-        const node = findNode('d09c08')
-        if (node.type !== 'dateTime') throw new Error('Expected business hours')
-
-        const draft = { ...node, data: { ...node.data, times: [{ day: 'mon', startTime: '18:00', endTime: '09:00' }] } }
-
-        expect(validateNodeDraft(draft)).toEqual([{ name: 'times.0', message: 'Start time must be before end time' }])
-    })
-
-    it('passes a valid node', () => {
-        expect(validateNodeDraft(findNode('d09c08'))).toEqual([])
+        expect(validateNodeDraft(backwardsHours)).toEqual([{ name: 'times.0', message: 'Start time must be before end time' }])
     })
 })

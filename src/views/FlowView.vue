@@ -5,15 +5,17 @@ import { useToast } from '@nuxt/ui/composables'
 import type { WorkflowId, WorkflowNodeFormTypes, WorkflowNodeTypes } from '@/types/workflow'
 import { useWorkflow } from '@/composables/useWorkflow'
 import { useWorkflowMutations } from '@/composables/useWorkflowMutations'
-import { canAddAfter, findLastLeaf, findNodeById } from '@/utils/workflow'
+import { useWorkflowStore } from '@/stores/workflow'
+import { canAddAfter, findLastLeaf } from '@/utils/workflow'
 import FlowCanvas from '@/components/flow/FlowCanvas.vue'
-import CreateNodeModal from '@/components/CreateNodeModal.vue'
-import NodeDrawer from '@/components/drawer/NodeDrawer.vue'
+import CreateNodeModal from '@/components/flow/CreateNodeModal.vue'
+import NodeDrawer from '@/components/flow/drawer/NodeDrawer.vue'
 
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 
+const store = useWorkflowStore()
 const { data, isPending, isError } = useWorkflow()
 const { createNode, updateNode, deleteNode } = useWorkflowMutations()
 
@@ -22,8 +24,8 @@ const createParentId = shallowRef<WorkflowId>(-1)
 
 const routeId = computed(() => typeof route.params.id === 'string' ? route.params.id : undefined)
 const selectedNode = computed(() => {
-    const node = routeId.value && data.value ? findNodeById(data.value, routeId.value) : undefined
-    return node?.type === 'dateTimeConnector' ? undefined : node
+    const routeNode = store.nodes.find((node) => String(node.id) === routeId.value)
+    return routeNode?.type === 'dateTimeConnector' ? undefined : routeNode
 })
 
 watch([data, routeId], () => {
@@ -36,7 +38,7 @@ function toggleNode(id: string) {
 
 function openCreate(parentId?: WorkflowId) {
     const selected = selectedNode.value && canAddAfter(selectedNode.value) ? selectedNode.value : undefined
-    createParentId.value = parentId ?? selected?.id ?? findLastLeaf(data.value ?? [])?.id ?? -1
+    createParentId.value = parentId ?? selected?.id ?? findLastLeaf(store.nodes)?.id ?? -1
     isCreateOpen.value = true
 }
 
@@ -62,9 +64,8 @@ function onDelete(id: WorkflowId) {
     <main class="relative h-full bg-gray-50">
         <p v-if="isPending" class="p-6 text-gray-500">Loading workflow...</p>
         <p v-else-if="isError" class="p-6 text-gray-500">Could not load the workflow.</p>
-        <template v-else-if="data">
+        <template v-else>
             <FlowCanvas
-                :nodes="data"
                 :selected-id="selectedNode?.id"
                 @add="openCreate"
                 @select="toggleNode"

@@ -29,7 +29,12 @@ export interface WorkflowSendMessageNodeTypes extends WorkflowBaseNodeTypes {
 
 export interface WorkflowDateTimeNodeTypes extends WorkflowBaseNodeTypes {
     type: 'dateTime'
-    data: { times: WorkflowBusinessHourTypes[], timezone: string }
+    data: {
+        times: WorkflowBusinessHourTypes[]
+        connectors: WorkflowId[]
+        timezone: string
+        action: 'businessHours'
+    }
 }
 
 export interface WorkflowDateTimeConnectorNodeTypes extends WorkflowBaseNodeTypes {

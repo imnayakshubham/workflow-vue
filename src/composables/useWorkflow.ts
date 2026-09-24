@@ -1,12 +1,17 @@
+import { watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { getWorkflow } from '@/api/workflow.api'
+import { useWorkflowStore } from '@/stores/workflow'
 
 export const WORKFLOW_QUERY_KEY = ['workflow']
 
 export function useWorkflow() {
-    return useQuery({
-        queryKey: WORKFLOW_QUERY_KEY,
-        queryFn: getWorkflow,
-        staleTime: 5 * 60 * 1000,
-    })
+    const store = useWorkflowStore()
+    const workflowQuery = useQuery({ queryKey: WORKFLOW_QUERY_KEY, queryFn: getWorkflow })
+
+    watch(workflowQuery.data, (fetchedNodes) => {
+        if (fetchedNodes) store.nodes = fetchedNodes
+    }, { immediate: true })
+
+    return workflowQuery
 }

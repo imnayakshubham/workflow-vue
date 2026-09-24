@@ -11,3 +11,6 @@ export async function getWorkflow(): Promise<WorkflowPayloadTypes> {
 
     return response.json()
 }
+export async function saveWorkflow(nodes: WorkflowPayloadTypes): Promise<WorkflowPayloadTypes> {
+    return nodes
+}

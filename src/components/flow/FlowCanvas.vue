@@ -3,24 +3,24 @@ import { computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { VueFlow, useVueFlow, type NodeDragEvent, type NodeMouseEvent } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
-import type { WorkflowId, WorkflowNodeTypes } from '@/types/workflow'
-import { useEditorStore } from '@/stores/editor'
+import type { WorkflowId } from '@/types/workflow'
+import { useWorkflowStore } from '@/stores/workflow'
 import { getNodeSize, layoutTree } from '@/utils/layout'
-import { findNodeById, toFlowEdges, toFlowNodes } from '@/utils/workflow'
+import { toFlowEdges, toFlowNodes } from '@/utils/workflow'
 import WorkflowNode from './WorkflowNode.vue'
 import ConnectorNode from './ConnectorNode.vue'
 import AddEdge from './AddEdge.vue'
 
 const DRAWER_WIDTH = 448
 
-const props = defineProps<{ nodes: WorkflowNodeTypes[], selectedId?: WorkflowId }>()
+const props = defineProps<{ selectedId?: WorkflowId }>()
 const emit = defineEmits<{
     add: [parentId: WorkflowId]
     select: [id: string]
 }>()
 
-const editor = useEditorStore()
-const { positions } = storeToRefs(editor)
+const store = useWorkflowStore()
+const { nodes, positions } = storeToRefs(store)
 
 const { setCenter, viewport, onPaneReady, onNodesChange } = useVueFlow()
 
@@ -32,29 +32,30 @@ onNodesChange((changes) => {
     }
 })
 
-const layout = computed(() => layoutTree(props.nodes, heights.value))
+const layout = computed(() => layoutTree(nodes.value, heights.value))
 const nodePositions = computed(() => ({ ...layout.value, ...positions.value }))
-const flowNodes = computed(() => toFlowNodes(props.nodes, nodePositions.value))
-const flowEdges = computed(() => toFlowEdges(props.nodes))
-const parentIds = computed(() => new Set(props.nodes.map((node) => node.parentId)))
+const flowNodes = computed(() => toFlowNodes(nodes.value, nodePositions.value))
+const flowEdges = computed(() => toFlowEdges(nodes.value))
+const parentIds = computed(() => new Set(nodes.value.map((node) => node.parentId)))
 
-function focusNode(id?: WorkflowId) {
-    const node = id === undefined ? undefined : findNodeById(props.nodes, String(id))
-    const position = node && nodePositions.value[String(node.id)]
-    if (!node || !position) return
+function focusNode(nodeId?: WorkflowId) {
+    const targetNode = nodes.value.find((node) => node.id === nodeId)
+    const position = targetNode && nodePositions.value[String(targetNode.id)]
+    if (!targetNode || !position) return
 
-    const { width, height } = getNodeSize(node)
+    const { width, height } = getNodeSize(targetNode)
+    const renderedHeight = heights.value[String(targetNode.id)] ?? height
     const { zoom } = viewport.value
-    const nodeHeight = heights.value[String(node.id)] ?? height
-    setCenter(position.x + width / 2 + DRAWER_WIDTH / 2 / zoom, position.y + nodeHeight / 2, { zoom, duration: 400 })
+
+    setCenter(position.x + width / 2 + DRAWER_WIDTH / 2 / zoom, position.y + renderedHeight / 2, { zoom, duration: 400 })
 }
 
 onPaneReady(() => focusNode(props.selectedId))
 watch(() => props.selectedId, focusNode)
 
 function onEdgeAdd(sourceId: string) {
-    const source = findNodeById(props.nodes, sourceId)
-    if (source) emit('add', source.id)
+    const sourceNode = nodes.value.find((node) => String(node.id) === sourceId)
+    if (sourceNode) emit('add', sourceNode.id)
 }
 
 function onNodeClick({ node }: NodeMouseEvent) {
@@ -62,7 +63,7 @@ function onNodeClick({ node }: NodeMouseEvent) {
 }
 
 function onDragStop({ nodes }: NodeDragEvent) {
-    nodes.forEach((node) => editor.setPosition(node.id, node.position))
+    nodes.forEach((node) => store.setPosition(node.id, node.position))
 }
 </script>
 
