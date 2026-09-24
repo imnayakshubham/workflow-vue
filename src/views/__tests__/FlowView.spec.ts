@@ -9,7 +9,7 @@ import { WORKFLOW_QUERY_KEY } from '@/composables/useWorkflow'
 import { payload } from '@/test/fixtures'
 import { clickButton } from '@/test/mount'
 
-const FlowCanvas = { name: 'FlowCanvas', props: ['selectedId'], emits: ['select', 'add'], template: '<div />' }
+const FlowCanvas = { name: 'FlowCanvas', props: ['selectedId'], emits: ['select', 'add', 'close'], template: '<div />' }
 
 async function renderAt(path: string) {
     const router = createRouter({
@@ -48,14 +48,14 @@ describe('FlowView', () => {
         expect(document.body.querySelector<HTMLInputElement>('input[name="title"]')?.value).toBe('Away Message')
     })
 
-    it('opens and closes the drawer when the same node is clicked twice', async () => {
+    it('opens the drawer when a node is selected and closes it when it is deselected', async () => {
         const { router, canvas } = await renderAt('/')
 
         canvas.vm.$emit('select', 'b6a0c1')
         await flushPromises()
         expect(router.currentRoute.value.path).toBe('/nodes/b6a0c1')
 
-        canvas.vm.$emit('select', 'b6a0c1')
+        canvas.vm.$emit('close')
         await flushPromises()
         expect(router.currentRoute.value.path).toBe('/')
     })

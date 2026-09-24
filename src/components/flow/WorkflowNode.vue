@@ -29,7 +29,7 @@ const description = computed(() => getDescription(props.node))
         <div class="px-3 py-2.5 text-xs leading-4 text-gray-500">
             <p
                 data-test="description"
-                class="line-clamp-3 break-words"
+                class="line-clamp-3 wrap-break-words"
                 :class="{ italic: node.type === 'sendMessage' }"
                 :title="description"
             >

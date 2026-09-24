@@ -8,3 +8,9 @@ body,
 #app {
     height: 100%;
 }
+
+.vue-flow__node:focus-visible {
+    outline: 1px solid var(--ui-primary) !important;
+    outline-offset: 2px;
+    border-radius: 0.5rem;
+}

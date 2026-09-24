@@ -59,5 +59,9 @@ export function validateNodeDraft(node: WorkflowNodeTypes) {
         })
     }
 
+    if (node.type === 'addComment' && !node.data.comment.trim()) {
+        errors.push({ name: 'comment', message: 'Comment cannot be empty' })
+    }
+
     return errors
 }

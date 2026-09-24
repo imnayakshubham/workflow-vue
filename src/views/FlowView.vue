@@ -32,8 +32,8 @@ watch([data, routeId], () => {
     if (data.value && routeId.value && !selectedNode.value) router.replace('/')
 }, { immediate: true })
 
-function toggleNode(id: string) {
-    router.push(id === routeId.value ? '/' : `/nodes/${id}`)
+function openNode(id: string) {
+    router.push(`/nodes/${id}`)
 }
 
 function openCreate(parentId?: WorkflowId) {
@@ -65,12 +65,13 @@ function onDelete(id: WorkflowId) {
         <p v-if="isPending" class="p-6 text-gray-500">Loading workflow...</p>
         <p v-else-if="isError" class="p-6 text-gray-500">Could not load the workflow.</p>
         <template v-else>
+            <UButton icon="i-lucide-plus" label="Create New Node" class="absolute top-4 left-4 z-10" @click="openCreate()" />
             <FlowCanvas
                 :selected-id="selectedNode?.id"
                 @add="openCreate"
-                @select="toggleNode"
+                @select="openNode"
+                @close="router.push('/')"
             />
-            <UButton icon="i-lucide-plus" label="Create New Node" class="absolute top-4 left-4 z-10" @click="openCreate()" />
         </template>
 
         <CreateNodeModal v-model:open="isCreateOpen" @create="onCreate" />

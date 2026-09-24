@@ -1,5 +1,5 @@
 import type { Edge, Node, XYPosition } from '@vue-flow/core'
-import type { WorkflowNodeTypes } from '@/types/workflow'
+import type { WorkflowId, WorkflowNodeTypes } from '@/types/workflow'
 
 const DEFAULT_TITLES: Record<WorkflowNodeTypes['type'], string> = {
     trigger: 'Trigger',
@@ -45,6 +45,18 @@ export function getFileName(url: string) {
     return url.split('?')[0]?.split('/').pop() ?? url
 }
 
+export function findNode(nodes: WorkflowNodeTypes[], id: WorkflowId) {
+    return nodes.find((node) => String(node.id) === String(id))
+}
+
+export function collectParentIds(nodes: WorkflowNodeTypes[]) {
+    return new Set(nodes.map((node) => node.parentId))
+}
+
+export function canAddAfter(node: WorkflowNodeTypes) {
+    return node.type !== 'dateTime'
+}
+
 export function getTitle(node: WorkflowNodeTypes) {
     return node.name || DEFAULT_TITLES[node.type]
 }
@@ -60,29 +72,39 @@ export function getDescription(node: WorkflowNodeTypes) {
         case 'addComment':
             return node.data.comment
         case 'sendMessage': {
-            const first = node.data.payload[0]
-            if (!first) return ''
-            return first.type === 'text' ? first.text : getFileName(first.attachment)
+            const firstItem = node.data.payload[0]
+            if (!firstItem) return ''
+            return firstItem.type === 'text' ? firstItem.text : getFileName(firstItem.attachment)
         }
         default:
             return ''
     }
 }
 
-export function toFlowNodes(nodes: WorkflowNodeTypes[], positions: Record<string, XYPosition>): Node<WorkflowNodeTypes>[] {
-    return nodes.map((node) => ({
-        id: String(node.id),
-        type: node.type === 'dateTimeConnector' ? 'connector' : 'workflow',
-        position: positions[String(node.id)] ?? { x: 0, y: 0 },
-        data: node,
-    }))
+export function buildCanvasNodes(nodes: WorkflowNodeTypes[], positions: Record<string, XYPosition>, selectedId?: WorkflowId): Node<WorkflowNodeTypes>[] {
+    const canvasNodes = nodes.map((node) => {
+        const isConnector = node.type === 'dateTimeConnector'
+
+        return {
+            id: String(node.id),
+            type: isConnector ? 'connector' : 'workflow',
+            position: positions[String(node.id)] ?? { x: 0, y: 0 },
+            data: node,
+            selectable: !isConnector,
+            draggable: !isConnector,
+            focusable: !isConnector,
+            selected: selectedId !== undefined && String(node.id) === String(selectedId),
+        }
+    })
+
+    return canvasNodes.sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x)
 }
 
-export function toFlowEdges(nodes: WorkflowNodeTypes[]): Edge[] {
-    const byId = new Map(nodes.map((node) => [String(node.id), node]))
+export function buildParentChildEdges(nodes: WorkflowNodeTypes[]): Edge[] {
+    const nodesById = new Map(nodes.map((node) => [String(node.id), node]))
 
     return nodes.flatMap((node) => {
-        const parent = byId.get(String(node.parentId))
+        const parent = nodesById.get(String(node.parentId))
         if (!parent) return []
 
         const color = NODE_COLORS[parent.type]
@@ -97,12 +119,8 @@ export function toFlowEdges(nodes: WorkflowNodeTypes[]): Edge[] {
     })
 }
 
-export function canAddAfter(node: WorkflowNodeTypes) {
-    return node.type !== 'dateTime'
-}
-
 export function findLastLeaf(nodes: WorkflowNodeTypes[]) {
-    const parentIds = new Set(nodes.map((node) => node.parentId))
+    const parentIds = collectParentIds(nodes)
     return nodes.filter((node) => !parentIds.has(node.id) && canAddAfter(node)).at(-1)
 }
 

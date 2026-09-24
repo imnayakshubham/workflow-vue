@@ -10,35 +10,37 @@ export function getNodeSize(node: WorkflowNodeTypes) {
         : { width: 220, height: 80 }
 }
 
-export function layoutTree(nodes: WorkflowNodeTypes[], heights: Record<string, number> = {}) {
-    const ids = new Set(nodes.map((node) => String(node.id)))
-    const children = new Map<string, WorkflowNodeTypes[]>()
-
-    for (const node of nodes) {
-        const key = String(node.parentId)
-        children.set(key, [...(children.get(key) ?? []), node])
-    }
+export function calculateNodePositions(nodes: WorkflowNodeTypes[], measuredHeights: Record<string, number> = {}) {
+    const allIds = new Set(nodes.map((node) => String(node.id)))
+    const childrenOf = new Map<string, WorkflowNodeTypes[]>()
+    nodes.forEach((node) => {
+        const siblings = childrenOf.get(String(node.parentId)) ?? []
+        siblings.push(node)
+        childrenOf.set(String(node.parentId), siblings)
+    })
 
     const positions: Record<string, XYPosition> = {}
-    let nextColumn = 0
+    let nextFreeColumn = 0
 
-    function place(node: WorkflowNodeTypes, y: number): number {
+    function placeNodeAndChildren(node: WorkflowNodeTypes, y: number): number {
         const { width, height: defaultHeight } = getNodeSize(node)
-        const height = heights[String(node.id)] ?? defaultHeight
-        const centers = (children.get(String(node.id)) ?? []).map((child) => place(child, y + height + ROW_GAP))
-        const first = centers[0]
-        const last = centers.at(-1)
-        const center = first !== undefined && last !== undefined
-            ? (first + last) / 2
-            : nextColumn++ * COLUMN_WIDTH
+        const height = measuredHeights[String(node.id)] ?? defaultHeight
+        const children = childrenOf.get(String(node.id)) ?? []
+        const childRowY = y + height + ROW_GAP
+        const childCenters = children.map((child) => placeNodeAndChildren(child, childRowY))
 
-        positions[String(node.id)] = { x: center - width / 2, y }
-        return center
+        const firstChildCenter = childCenters[0]
+        const lastChildCenter = childCenters.at(-1)
+        const centerX = firstChildCenter !== undefined && lastChildCenter !== undefined
+            ? (firstChildCenter + lastChildCenter) / 2
+            : nextFreeColumn++ * COLUMN_WIDTH
+
+        positions[String(node.id)] = { x: centerX - width / 2, y }
+        return centerX
     }
 
-    nodes
-        .filter((node) => !ids.has(String(node.parentId)))
-        .forEach((root) => place(root, 0))
+    const rootNodes = nodes.filter((node) => !allIds.has(String(node.parentId)))
+    rootNodes.forEach((root) => placeNodeAndChildren(root, 0))
 
     return positions
 }

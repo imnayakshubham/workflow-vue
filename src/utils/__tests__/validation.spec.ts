@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { validateImageFile, validateNodeDraft, validateNodeForm } from '@/utils/validation'
-import { businessHours } from '@/test/fixtures'
+import { businessHours, comment } from '@/test/fixtures'
 
 describe('validation', () => {
     it('lists an error for every invalid field in the create form', () => {
@@ -28,5 +28,11 @@ describe('validation', () => {
         }
 
         expect(validateNodeDraft(backwardsHours)).toEqual([{ name: 'times.0', message: 'Start time must be before end time' }])
+    })
+
+    it('does not allow an empty comment', () => {
+        const emptyComment = { ...comment, data: { comment: ' ' } }
+
+        expect(validateNodeDraft(emptyComment)).toEqual([{ name: 'comment', message: 'Comment cannot be empty' }])
     })
 })

@@ -15,6 +15,6 @@ const buttonStyle = computed(() => ({
 <template>
     <BaseEdge :path="path[0]" :style="{ stroke: data.color, strokeWidth: 1.5 }" />
     <EdgeLabelRenderer>
-        <AddNodeButton :color="data.color" class="pointer-events-auto absolute" :style="buttonStyle" @click.stop="emit('add')" />
+        <AddNodeButton :color="data.color" tabindex="-1" class="pointer-events-auto absolute" :style="buttonStyle" @click.stop="emit('add')" />
     </EdgeLabelRenderer>
 </template>
