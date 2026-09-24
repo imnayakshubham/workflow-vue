@@ -5,7 +5,7 @@ A flow chart editor built with Vue 3. It loads a workflow from `payload.json`, d
 ## Features
 
 - **Canvas:** nodes render from the payload in a top-down tree and can be dragged. Each card shows an icon, a title and a shortened description.
-- **Create node:** use the "Create New Node" button or the "+" on any line or under any last node. The form has Title, Description and Type (Send Message, Add Comments, Business Hours), all validated.
+- **Create node:** use the "+" on any line or under any last node. An empty workflow shows a "Create New Node" button in the middle of the canvas instead. The form has Title, Description and Type (Send Message, Add Comments, Business Hours), all validated.
 - **Details drawer:** click a node to open it. The URL becomes `/nodes/:id`, so the drawer can be linked to and survives a reload. Clicking the empty canvas or pressing Escape closes it. Nodes can also be selected with the keyboard (Tab to a node, then Enter or Space), which is Vue Flow's built-in accessibility. Tab walks the nodes top-down, and the focused node shows a ring.
   - Every node: edit title and description, or delete it (this also removes everything below it, after a confirmation).
   - Send Message: attachments as image tiles with upload (images up to 2 MB) and remove, plus editable texts you can remove.

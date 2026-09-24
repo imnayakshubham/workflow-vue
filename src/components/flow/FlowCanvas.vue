@@ -62,9 +62,8 @@ function centerOnNode(nodeId?: WorkflowId) {
 
     const nodeCenterX = position.x + width / 2
     const nodeCenterY = position.y + nodeHeight / 2
-    const drawerOffset = DRAWER_WIDTH / 2 / zoom
 
-    setCenter(nodeCenterX + drawerOffset, nodeCenterY, { zoom, duration: 400 })
+    setCenter(nodeCenterX , nodeCenterY, { zoom, duration: 400 })
 }
 
 onPaneReady(() => centerOnNode(props.selectedId))
@@ -85,6 +84,7 @@ function onEdgeAdd(parentId: string) {
         :nodes="nodes"
         :edges="edges"
         :nodes-connectable="false"
+        :select-nodes-on-drag="false"
         :edges-focusable="false"
         :delete-key-code="null"
         :fit-view-on-init="selectedId === undefined"

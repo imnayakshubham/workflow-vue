@@ -61,11 +61,11 @@ function onDelete(id: WorkflowId) {
 </script>
 
 <template>
-    <main class="relative h-full bg-gray-50">
-        <p v-if="isPending" class="p-6 text-gray-500">Loading workflow...</p>
-        <p v-else-if="isError" class="p-6 text-gray-500">Could not load the workflow.</p>
+    <main class="relative h-full ">
+        <p v-if="isPending" class="flex h-full items-center justify-center text-gray-500">Loading workflow...</p>
+        <p v-else-if="isError" class="flex h-full items-center justify-center text-gray-500">Could not load the workflow.</p>
         <template v-else>
-            <UButton icon="i-lucide-plus" label="Create New Node" class="absolute top-4 left-4 z-10" @click="openCreate()" />
+            <UButton v-if="store.nodes.length === 0" icon="i-lucide-plus" label="Create New Node" class="absolute top-1/2 left-1/2 z-10 -translate-x-1/2 -translate-y-1/2" @click="openCreate()" />
             <FlowCanvas
                 :selected-id="selectedNode?.id"
                 @add="openCreate"

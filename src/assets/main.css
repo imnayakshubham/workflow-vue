@@ -14,3 +14,9 @@ body,
     outline-offset: 2px;
     border-radius: 0.5rem;
 }
+
+.vue-flow__node.selectable:focus-visible {
+    outline: 1px solid var(--ui-primary) !important;
+    outline-offset: 2px;
+    border-radius: 0.5rem;
+}
