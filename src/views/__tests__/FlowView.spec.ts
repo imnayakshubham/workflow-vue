@@ -122,6 +122,15 @@ describe('FlowView', () => {
         expect(store.nodes).toEqual(payload)
     })
 
+    it('shows the Create New Node button on a loaded workflow and opens the form when it is clicked', async () => {
+        await renderAt('/')
+
+        clickButton('Create New Node')
+        await flushPromises()
+
+        expect(find(titleField)).toBeTruthy()
+    })
+
     it('goes back to the canvas and closes the drawer after the node is saved', async () => {
         const { router } = await renderAt(`/nodes/${awayMessage.id}`)
 

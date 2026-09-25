@@ -1,6 +1,6 @@
 import { watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import { getWorkflow } from '@/api/workflow.api'
+import { getWorkflow } from '@/api/services/workflow'
 import { useWorkflowStore } from '@/stores/workflow'
 
 export const WORKFLOW_QUERY_KEY = ['workflow']

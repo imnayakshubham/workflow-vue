@@ -79,6 +79,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
         <p v-else-if="isError" class="flex h-full items-center justify-center text-gray-500">Could not load the workflow.</p>
         <template v-else>
             <UFieldGroup class="absolute top-4 left-4 z-10 flex gap-2">
+                 <UButton icon="i-lucide-plus" label="Create New Node" @click="openCreate()" />
                 <UButton icon="i-lucide-undo-2" aria-label="Undo" color="neutral" variant="outline" size="sm" :disabled="!store.canUndo" @click="store.undo()" />
                 <UButton icon="i-lucide-redo-2" aria-label="Redo" color="neutral" variant="outline" size="sm" :disabled="!store.canRedo" @click="store.redo()" />
             </UFieldGroup>

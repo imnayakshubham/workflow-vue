@@ -37,13 +37,17 @@ No setup or environment variables are needed. The dev server proxies the payload
 
 Vue 3 with `<script setup>` and TypeScript, Vite, Vue Router, Pinia, TanStack Vue Query, Vue Flow, Nuxt UI v4 with Tailwind CSS v4, Vitest.
 
+The brief lists JavaScript. TypeScript is used as a superset of it, so the components, store and utils are type-checked.
+
 ## How it works
 
 ### Folders
 
 ```text
 src/
-  api/          getWorkflow, saveWorkflow, saveNode, deleteNode
+  api/
+    endpoints/  the URLs for each feature
+    services/   the request functions for each feature
   composables/  useWorkflow (loads the data), useWorkflowMutations (saves changes)
   stores/       the Pinia store: nodes, positions, tree actions, undo/redo
   components/
@@ -121,7 +125,7 @@ Errors show under the field. The drawer only saves when everything passes.
 
 ## Testing
 
-Tests live next to the code in `__tests__` folders. Fixtures and mount helpers are in `src/test/`.
+Tests live next to the code in `__tests__` folders. Fixtures and mount helpers are in `src/test/`. GitHub Actions runs the type-check and the tests on every push and pull request.
 
 - `utils/`: layout, node helpers and every validation rule
 - `stores/`: the tree actions, undo, redo and rollback

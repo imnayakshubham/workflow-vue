@@ -1,6 +1,6 @@
 import { toRaw } from 'vue'
 import { useMutation } from '@tanstack/vue-query'
-import * as workflowApi from '@/api/workflow.api'
+import * as workflowApi from '@/api/services/workflow'
 import { useWorkflowStore } from '@/stores/workflow'
 import type { WorkflowId, WorkflowNodeFormTypes, WorkflowNodeTypes } from '@/types/workflow'
 
@@ -13,18 +13,13 @@ export function useWorkflowMutations() {
     const store = useWorkflowStore()
 
     const createNode = useMutation({
-        mutationFn: (_input: CreateNodeInput) => {
-            console.log(_input, store.nodes, toRaw(store.nodes))
-            return workflowApi.saveWorkflow(toRaw(store.nodes))
-        },
+        mutationFn: (_input: CreateNodeInput) => workflowApi.saveWorkflow(toRaw(store.nodes)),
         onMutate: ({ form, parentId }: CreateNodeInput) => store.addNode(form, parentId),
         onError: () => store.rollback(),
     })
 
     const updateNode = useMutation({
-        mutationFn: (updatedNode: WorkflowNodeTypes) => {
-            return workflowApi.saveNode(updatedNode)
-        },
+        mutationFn: (updatedNode: WorkflowNodeTypes) => workflowApi.saveNode(updatedNode),
         onMutate: (updatedNode: WorkflowNodeTypes) => store.updateNode(updatedNode),
         onError: () => store.rollback(),
     })

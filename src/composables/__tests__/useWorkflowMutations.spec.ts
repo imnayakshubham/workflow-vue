@@ -3,12 +3,12 @@ import { defineComponent } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { VueQueryPlugin } from '@tanstack/vue-query'
-import { deleteNode, saveNode, saveWorkflow } from '@/api/workflow.api'
+import { deleteNode, saveNode, saveWorkflow } from '@/api/services/workflow'
 import { useWorkflowMutations } from '@/composables/useWorkflowMutations'
 import { useWorkflowStore } from '@/stores/workflow'
 import { awayMessage, businessHours, comment, failureBranch, payload, successBranch, trigger, welcomeMessage } from '@/test/fixtures'
 
-vi.mock('@/api/workflow.api', () => ({
+vi.mock('@/api/services/workflow', () => ({
     getWorkflow: vi.fn(),
     saveWorkflow: vi.fn(async (nodes) => nodes),
     saveNode: vi.fn(async (node) => node),
