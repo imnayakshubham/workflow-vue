@@ -1,6 +1,6 @@
 # Workflow editor
 
-A flow chart editor built with Vue 3. It loads a workflow from `payload.json`, draws it as a tree, and lets you add, edit, move and delete nodes. Everything can be undone and redone.
+A workflow editor built with Vue 3. It loads a workflow from `payload.json`, draws it as a flow chart, and lets you add, edit, move and delete nodes. Everything can be undone and redone.
 
 - Live demo: https://workflow-viz-app.vercel.app/
 - GitHub repository: https://github.com/imnayakshubham/workflow-vue
