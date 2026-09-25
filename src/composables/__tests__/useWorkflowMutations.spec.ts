@@ -3,7 +3,7 @@ import { defineComponent } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { VueQueryPlugin } from '@tanstack/vue-query'
-import { saveWorkflow } from '@/api/workflow.api'
+import { deleteNode, saveNode, saveWorkflow } from '@/api/workflow.api'
 import { useWorkflowMutations } from '@/composables/useWorkflowMutations'
 import { useWorkflowStore } from '@/stores/workflow'
 import { awayMessage, businessHours, comment, failureBranch, payload, successBranch, trigger, welcomeMessage } from '@/test/fixtures'
@@ -11,6 +11,8 @@ import { awayMessage, businessHours, comment, failureBranch, payload, successBra
 vi.mock('@/api/workflow.api', () => ({
     getWorkflow: vi.fn(),
     saveWorkflow: vi.fn(async (nodes) => nodes),
+    saveNode: vi.fn(async (node) => node),
+    deleteNode: vi.fn(async (nodeId) => nodeId),
 }))
 
 function setup() {
@@ -48,6 +50,7 @@ describe('createNode', () => {
         await flushPromises()
 
         const newNode = store.nodes.at(-1)
+        expect(saveWorkflow).toHaveBeenCalledWith(store.nodes)
         expect(store.nodes).toHaveLength(payload.length + 1)
         expect(newNode).toMatchObject({ parentId: comment.id, name: 'Note', type: 'addComment', data: { comment: '' } })
         expect(newNode?.description).toBeUndefined()
@@ -93,6 +96,7 @@ describe('updateNode', () => {
         mutations.updateNode.mutate(renamedComment)
         await flushPromises()
 
+        expect(saveNode).toHaveBeenCalledWith(renamedComment)
         expect(store.nodes.find((node) => node.id === comment.id)).toEqual(renamedComment)
         expect(store.nodes).toHaveLength(payload.length)
     })
@@ -105,6 +109,7 @@ describe('deleteNode', () => {
         mutations.deleteNode.mutate(failureBranch.id)
         await flushPromises()
 
+        expect(deleteNode).toHaveBeenCalledWith(failureBranch.id)
         expect(idsOf(store.nodes)).toEqual([trigger.id, businessHours.id, successBranch.id, welcomeMessage.id])
     })
 
@@ -123,7 +128,7 @@ describe('deleteNode', () => {
 describe('when saving fails', () => {
     it('restores the old nodes and leaves nothing to undo when the save fails', async () => {
         const { store, mutations } = setup()
-        vi.mocked(saveWorkflow).mockRejectedValueOnce(new Error('Network error'))
+        vi.mocked(deleteNode).mockRejectedValueOnce(new Error('Network error'))
 
         mutations.deleteNode.mutate(businessHours.id)
         await flushPromises()

@@ -43,7 +43,7 @@ Vue 3 with `<script setup>` and TypeScript, Vite, Vue Router, Pinia, TanStack Vu
 
 ```text
 src/
-  api/          getWorkflow and saveWorkflow
+  api/          getWorkflow, saveWorkflow, saveNode, deleteNode
   composables/  useWorkflow (loads the data), useWorkflowMutations (saves changes)
   stores/       the Pinia store: nodes, positions, tree actions, undo/redo
   components/
@@ -60,9 +60,9 @@ src/
 1. `useWorkflow` fetches `payload.json` with Vue Query and puts the nodes in the store.
 2. `FlowView` reads the store and the route, and renders the canvas, the create form and the drawer.
 3. When you add, edit, delete or move a node, a store action changes the data. The canvas re-renders from the store.
-4. For add, edit and delete, a Vue Query mutation calls the store action and then `saveWorkflow`. If the save fails, the store rolls the change back.
+4. For add, edit and delete, a Vue Query mutation calls the store action and then the API. Add sends the whole workflow with `saveWorkflow`, because it changes several nodes at once. Edit sends only the node with `saveNode`, and delete sends only the id with `deleteNode`. If the request fails, the store rolls the change back.
 
-There is no write endpoint, so `saveWorkflow` just returns what it was given. Changes stay in memory until you reload.
+There is no write endpoint, so the three save functions just return what they were given. Changes stay in memory until you reload.
 
 The lines between nodes are not stored. Each node has a `parentId`, and the edges are worked out from that on every render.
 

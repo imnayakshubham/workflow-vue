@@ -9,6 +9,13 @@ body,
     height: 100%;
 }
 
+@layer base {
+    button:not(:disabled),
+    [role='button']:not(:disabled) {
+        cursor: pointer;
+    }
+}
+
 .vue-flow__node:focus-visible {
     outline: 1px solid var(--ui-primary) !important;
     outline-offset: 2px;

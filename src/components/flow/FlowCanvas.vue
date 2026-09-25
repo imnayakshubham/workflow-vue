@@ -22,7 +22,7 @@ const emit = defineEmits<{
 
 const store = useWorkflowStore()
 const { nodes: workflowNodes, positions: draggedPositions } = storeToRefs(store)
-const { setCenter, viewport, onPaneReady, onNodesChange, onNodeDragStop } = useVueFlow()
+const { setCenter, setViewport, viewport, dimensions, onPaneReady, onNodesChange, onNodeDragStop } = useVueFlow()
 const measuredHeights = ref<Record<string, number>>({})
 
 onNodesChange((changes) => {
@@ -48,7 +48,7 @@ const nodes = computed(() => buildCanvasNodes(workflowNodes.value, nodePositions
 const edges = computed(() => buildParentChildEdges(workflowNodes.value))
 const parentIds = computed(() => collectParentIds(workflowNodes.value))
 
-function centerOnNode(nodeId?: WorkflowId) {
+function nodeBox(nodeId?: WorkflowId) {
     if (nodeId === undefined) return
 
     const node = findNode(workflowNodes.value, nodeId)
@@ -56,17 +56,34 @@ function centerOnNode(nodeId?: WorkflowId) {
     if (!node || !position) return
 
     const { width, height } = getNodeSize(node)
-    const nodeHeight = measuredHeights.value[String(node.id)] ?? height
+    return { ...position, width, height: measuredHeights.value[String(node.id)] ?? height }
+}
+
+function centerOnNode(nodeId?: WorkflowId) {
+    const box = nodeBox(nodeId)
+    if (!box) return
+
     const { zoom } = viewport.value
+    const visibleCenterX = box.x + box.width / 2 + DRAWER_WIDTH / 2 / zoom
+    const centerY = box.y + box.height / 2
 
-    const nodeCenterX = position.x + width / 2
-    const nodeCenterY = position.y + nodeHeight / 2
+    setCenter(visibleCenterX, centerY, { zoom, duration: 400 })
+}
 
-    setCenter(nodeCenterX , nodeCenterY, { zoom, duration: 400 })
+function keepNodeClearOfDrawer(nodeId?: WorkflowId) {
+    const box = nodeBox(nodeId)
+    if (!box) return
+
+    const { x, y, zoom } = viewport.value
+    const nodeRight = (box.x + box.width) * zoom + x
+    const visibleRight = dimensions.value.width - DRAWER_WIDTH - 16
+    const overflow = nodeRight - visibleRight
+
+    if (overflow > 0) setViewport({ x: x - overflow, y, zoom }, { duration: 400 })
 }
 
 onPaneReady(() => centerOnNode(props.selectedId))
-watch(() => props.selectedId, centerOnNode)
+watch(() => props.selectedId, (id) => keepNodeClearOfDrawer(id))
 
 onNodeDragStop(({ nodes: draggedNodes }) => store.moveNodes(draggedNodes))
 
