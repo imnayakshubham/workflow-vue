@@ -8,7 +8,7 @@ import App from '@/App.vue'
 import { useWorkflowStore } from '@/stores/workflow'
 import FlowView from '@/views/FlowView.vue'
 import { WORKFLOW_QUERY_KEY } from '@/composables/useWorkflow'
-import { awayMessage, comment, payload, trigger } from '@/test/fixtures'
+import { awayMessage, comment, payload, successBranch, trigger } from '@/test/fixtures'
 import { clickButton, find, titleField } from '@/test/mount'
 
 const FlowCanvas = { name: 'FlowCanvas', props: ['selectedId'], emits: ['select', 'add', 'close'], template: '<div />' }
@@ -73,6 +73,13 @@ describe('FlowView', () => {
         const { router } = await renderAt('/nodes/missing')
 
         expect(router.currentRoute.value.path).toBe('/')
+    })
+
+    it('redirects to the canvas when the URL points to a Success or Failure branch, which cannot be opened', async () => {
+        const { router } = await renderAt(`/nodes/${successBranch.id}`)
+
+        expect(router.currentRoute.value.path).toBe('/')
+        expect(document.body.querySelector('form#node-form')).toBeNull()
     })
 
     it('undoes with Cmd or Ctrl+Z and redoes when Shift is held as well', async () => {

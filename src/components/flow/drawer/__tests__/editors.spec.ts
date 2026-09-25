@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
+import { Time } from '@internationalized/date'
 import type { VueWrapper } from '@vue/test-utils'
 import SendMessageEditor from '@/components/flow/drawer/SendMessageEditor.vue'
 import CommentEditor from '@/components/flow/drawer/CommentEditor.vue'
@@ -88,5 +89,25 @@ describe('BusinessHoursEditor', () => {
         expect(document.body.textContent).toContain('Tue')
         expect(document.body.textContent).toContain('(GMT+00:00) UTC')
         expect(document.body.querySelectorAll('[aria-label$="start time"]')).toHaveLength(2)
+    })
+
+    it('emits the times with the picked value in the right day and field', async () => {
+        const times = [
+            { day: 'mon', startTime: '09:00', endTime: '17:00' },
+            { day: 'tue', startTime: '09:00', endTime: '17:00' },
+        ]
+        const editor = await mountWithUi(BusinessHoursEditor, {
+            modelValue: { times, connectors: [], timezone: 'UTC', action: 'businessHours' },
+        })
+
+        const picker = editor.findAllComponents({ name: 'InputTime' })[3]
+        picker?.vm.$emit('update:modelValue', new Time(18, 30))
+
+        expect(lastUpdate(editor)).toEqual([{
+            times: [times[0], { day: 'tue', startTime: '09:00', endTime: '18:30' }],
+            connectors: [],
+            timezone: 'UTC',
+            action: 'businessHours',
+        }])
     })
 })
