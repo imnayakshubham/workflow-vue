@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import CreateNodeModal from '@/components/flow/CreateNodeModal.vue'
-import { find, mountWithUi, typeInto } from '@/test/mount'
+import { find, mountWithUi, titleField, typeInto } from '@/test/mount'
 
 async function chooseType(label: string) {
     find('button[role="combobox"]').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
@@ -23,7 +23,7 @@ describe('CreateNodeModal', () => {
         document.body.innerHTML = ''
     })
 
-    it('shows errors and does not create a node when the form is empty', async () => {
+    it('shows the field errors and does not emit create when the form is submitted empty', async () => {
         const modal = await mountWithUi(CreateNodeModal, { open: true })
 
         await submitForm()
@@ -33,10 +33,10 @@ describe('CreateNodeModal', () => {
         expect(modal.emitted('create')).toBeUndefined()
     })
 
-    it('sends the form and closes when it is valid', async () => {
+    it('emits the filled-in form and closes itself when the form is valid', async () => {
         const modal = await mountWithUi(CreateNodeModal, { open: true })
 
-        typeInto('input[name="title"]', 'Welcome')
+        typeInto(titleField, 'Welcome')
         await chooseType('Add Comments')
         await submitForm()
 

@@ -1,20 +1,10 @@
-# Workflow
+# Workflow editor
 
-A flow chart editor built with Vue 3. It loads a workflow from `payload.json`, draws it as a tree with Vue Flow, and lets you create, edit, move and delete nodes.
-
-## Features
-
-- **Canvas:** nodes render from the payload in a top-down tree and can be dragged. Each card shows an icon, a title and a shortened description.
-- **Create node:** use the "+" on any line or under any last node. An empty workflow shows a "Create New Node" button in the middle of the canvas instead. The form has Title, Description and Type (Send Message, Add Comments, Business Hours), all validated.
-- **Details drawer:** click a node to open it. The URL becomes `/nodes/:id`, so the drawer can be linked to and survives a reload. Clicking the empty canvas or pressing Escape closes it. Nodes can also be selected with the keyboard (Tab to a node, then Enter or Space), which is Vue Flow's built-in accessibility. Tab walks the nodes top-down, and the focused node shows a ring.
-  - Every node: edit title and description, or delete it (this also removes everything below it, after a confirmation).
-  - Send Message: attachments as image tiles with upload (images up to 2 MB) and remove, plus editable texts you can remove.
-  - Add Comment: edit or clear the comment.
-  - Business Hours: a start and end time for each day, plus a time zone. Success and Failure are display-only.
+A flow chart editor built with Vue 3. It loads a workflow from `payload.json`, draws it as a tree, and lets you add, edit, move and delete nodes. Everything can be undone and redone.
 
 ## Getting started
 
-Requires Node `^22.18.0` or `>=24.12.0`.
+Needs Node `^22.18.0` or `>=24.12.0`.
 
 ```sh
 npm install
@@ -23,57 +13,122 @@ npm run dev
 
 | Script | What it does |
 | --- | --- |
-| `npm run dev` | Dev server at http://localhost:5173 |
-| `npm run build` | Type-check and production build |
+| `npm run dev` | Start the dev server at `http://localhost:5173` |
+| `npm run build` | Type-check and build for production |
 | `npm run preview` | Serve the production build |
-| `npm test` | Vitest in watch mode |
+| `npm test` | Run the tests in watch mode |
+| `npm run test:ui` | Run the tests with the Vitest dashboard |
 | `npx vitest run` | Run the tests once |
 
-## Deployment
+No setup or environment variables are needed. The dev server proxies the payload request for you.
 
-The app deploys to Vercel as a static site. `vercel.json` rewrites `/api/payload.json` to the S3 file (the bucket sends no CORS headers) and every other path to `index.html` for the client-side routes.
+## Features
+
+- **Canvas.** Nodes are drawn as a top-down tree. Each card shows an icon, a title and a short description. You can drag nodes, and pan and zoom the canvas.
+- **Add a node.** Click the "+" on any line, or under the last node. A form asks for a title, a description and a type (Send Message, Add Comment or Business Hours). The new node goes between the parent and its children.
+- **Edit a node.** Click a node to open the drawer. The URL changes to `/nodes/:id`, so you can link to it or reload the page. You can change the title and description, or delete the node together with everything below it.
+  - Send Message: edit or remove texts, and add or remove image attachments (up to 2 MB).
+  - Add Comment: edit the comment.
+  - Business Hours: set a start and end time for each day, and a time zone. The Success and Failure branches cannot be opened.
+- **Undo and redo.** Press Cmd/Ctrl+Z and Cmd/Ctrl+Shift+Z, or use the two buttons at the top left. Every move, add, edit and delete is one step.
+- **Keyboard.** Tab moves between nodes from top to bottom. Enter or Space opens the focused node. Escape closes the drawer.
 
 ## Tech stack
 
-Vue 3 (`<script setup>`, TypeScript), Vite, Vue Router, Pinia, TanStack Vue Query, Vue Flow, Nuxt UI v4 with Tailwind CSS v4, Vitest with Vue Test Utils.
+Vue 3 with `<script setup>` and TypeScript, Vite, Vue Router, Pinia, TanStack Vue Query, Vue Flow, Nuxt UI v4 with Tailwind CSS v4, Vitest.
 
-## Architecture
+## How it works
 
-```
+### Folders
+
+```text
 src/
-  api/          fetches payload.json
-  composables/  useWorkflow (query), useWorkflowMutations (create, update, delete)
-  stores/       workflow store (nodes and dragged positions)
+  api/          getWorkflow and saveWorkflow
+  composables/  useWorkflow (loads the data), useWorkflowMutations (saves changes)
+  stores/       the Pinia store: nodes, positions, tree actions, undo/redo
   components/
-    flow/       canvas, node cards, the "+" edge, create modal
-      drawer/   details drawer and one editor per node type
-  utils/        pure logic: tree layout, node helpers, validation, time, files
-  views/        FlowView, the only route view
+    flow/       canvas, node cards, the "+" edge, the create form
+      drawer/   the drawer and one editor per node type
+  utils/        pure functions: layout, node helpers, validation
+  views/        FlowView, the only page
+  types/        the payload types
+  test/         fixtures and mount helpers for the tests
 ```
 
-**How data moves**
-- **Vue Query** fetches `payload.json` (`useWorkflow`) with the query config the spec requires: `staleTime: Infinity`, `gcTime: 1h`, `refetchOnWindowFocus: false`, `networkMode: 'always'`. The result is put into the Pinia store.
-- **Pinia** (`stores/workflow.ts`) stores the data the UI renders: `nodes`, in the same shape as the API response, and `positions` for dragged nodes.
-- **Every change is an optimistic Vue Query mutation** (`useWorkflowMutations`). `onMutate` saves the current nodes, changes the store straight away and returns the old nodes. `onError` puts them back if the save fails. The create, update and delete logic is written out inside each `onMutate`, so you can read what each one does in one place.
-- **`saveWorkflow`** stands in for a save request. `payload.json` is a read-only file with no write endpoint, so it just resolves.
-- **Vue Router** holds which node is open. `/` and `/nodes/:id` render the same view, so opening the drawer never remounts the canvas.
+### Data flow
+
+1. `useWorkflow` fetches `payload.json` with Vue Query and puts the nodes in the store.
+2. `FlowView` reads the store and the route, and renders the canvas, the create form and the drawer.
+3. When you add, edit, delete or move a node, a store action changes the data. The canvas re-renders from the store.
+4. For add, edit and delete, a Vue Query mutation calls the store action and then `saveWorkflow`. If the save fails, the store rolls the change back.
+
+There is no write endpoint, so `saveWorkflow` just returns what it was given. Changes stay in memory until you reload.
+
+The lines between nodes are not stored. Each node has a `parentId`, and the edges are worked out from that on every render.
+
+### The store
+
+The store holds `nodes` (the same shape as the payload), `positions` (only for nodes you dragged), and the undo/redo history.
+
+It has four actions that change data: `addNode`, `updateNode`, `removeNode` and `moveNodes`. Each one saves a snapshot for undo and then replaces `nodes` or `positions` with a new object. Nothing is changed in place.
+
+The mutations in `useWorkflowMutations` never touch the tree. They call a store action, save, and roll back on error. Building a new node from the form is a pure function, `buildNodes` in `utils/workflow.ts`.
+
+So each file has one job: the util knows what a node looks like, the store knows how to change the tree, and the mutation knows how to save.
+
+### Undo and redo
+
+The history is two lists, `past` and `future`. A snapshot is `{ nodes, positions }`. Because the store never changes these in place, a snapshot only needs to point at the old objects. Nothing is copied.
+
+- Every store action starts by pushing a snapshot to `past` and clearing `future`.
+- Undo moves the current state to `future` and restores the last snapshot from `past`.
+- Redo does the opposite.
+- Rollback restores the last snapshot from `past` without adding to `future`, so a failed save leaves nothing to undo.
+
+Cmd/Ctrl+Z is a single keydown listener on the page. It ignores key presses inside text fields, so you can still undo typing in the drawer.
+
+If you undo the creation of the node you have open, the node disappears, the route goes back to `/` and the drawer closes.
+
+### Routing
+
+`/` and `/nodes/:id` both render `FlowView`. The route decides which node is open. Clicking a node pushes its URL and closing the drawer pushes `/`. The canvas is never remounted, so opening and closing the drawer is smooth.
+
+An unknown id, or the id of a Success or Failure branch, redirects to `/`.
+
+### Layout
+
+`utils/layout.ts` places the nodes. A parent is centred above its children, and each child row starts below its parent's measured height. A card with a long description pushes everything below it down.
+
+### Validation
+
+The rules live in `utils/validation.ts` and are used by both the create form and the drawer:
+
+- Title is required, up to 50 characters.
+- Description is up to 200 characters.
+- Type is required when creating.
+- Attachments must be images up to 2 MB.
+- Business Hours start time must be before end time.
+- Texts and comments cannot be empty.
+
+Errors show under the field. The drawer only saves when everything passes.
 
 ## Design decisions
 
-- **Nuxt UI instead of PrimeVue.** PrimeVue 5 now needs a commercial license key and shows a license banner without one. Nuxt UI is MIT licensed, built on Reka UI for accessibility, and uses Tailwind.
-- **Custom tree layout** (`utils/layout.ts`). A parent is centred above its children, and each row sits below the measured height of the card above it. Cards can therefore grow with their content and the lines stay tidy.
-- **The "+" is a custom edge.** It sits at the midpoint of each line, so it stays centred whatever the card sizes. Adding after a node puts the new node between it and its existing children. Adding a Business Hours node moves the existing children under its Success branch. There is no "+" directly under Business Hours, because nothing may sit between it and its Success/Failure branches.
-- **Descriptions.** The payload has no description field. Cards show a stored description when there is one, otherwise a description derived from the node (for example "Business Hours - UTC").
-- **Same shape as the API.** New nodes are built exactly like the API's (Business Hours includes `connectors` and `action`). The only extra field is an optional `description`, because the spec asks for an editable description and the API has none.
-- **Drafts in the drawer.** The drawer edits a copy and only saves when you press Save and the checks pass, so the chart never shows half-finished edits.
-- **Delete removes the subtree.** This keeps the tree valid and predictable. The confirmation dialog says so.
-- **CORS proxy.** The S3 bucket sends no CORS headers, so the app fetches `/api/payload.json`. `vite.config.ts` proxies that path in development and `vercel.json` rewrites it in production.
-- **Edits live in memory.** The assignment has no write endpoint, so `saveWorkflow` returns its input and edits and dragged positions are kept only in the Pinia store. A reload restores the original payload.
+- **Nuxt UI instead of PrimeVue.** PrimeVue 5 needs a paid license key and shows a banner without one. Nuxt UI is free, accessible and uses Tailwind.
+- **Delete removes the subtree.** It keeps the tree valid, and the confirmation dialog says so.
+- **The drawer edits a copy.** The canvas only changes when you press Save.
+- **CORS.** The S3 bucket does not allow browser requests, so the app fetches `/api/payload.json` from its own origin. Vite proxies it in development and Vercel rewrites it in production.
 
 ## Testing
 
-Tests sit next to the code in `__tests__` folders. The shared fixtures (each API node by name, such as `awayMessage` or `businessHours`) and mount helpers are in `src/test/`. The tests cover:
-- the pure utilities: layout, node helpers and validation
-- the optimistic mutations, including the rollback when a save fails
-- the node cards, the create modal, the drawer and each editor, mounted with the real Nuxt UI components
-- `FlowView` routing: opening from the URL, closing, and redirecting unknown ids
+Tests live next to the code in `__tests__` folders. Fixtures and mount helpers are in `src/test/`.
+
+- `utils/`: layout, node helpers and every validation rule
+- `stores/`: the tree actions, undo, redo and rollback
+- `composables/`: the mutations, including rollback when a save fails
+- `components/`: the node cards, the create form, the drawer and each editor, mounted with the real Nuxt UI components
+- `views/`: routing, keyboard undo/redo, the undo button, and the drawer closing when its node is undone
+
+## Deployment
+
+The app is a static site on Vercel. `vercel.json` rewrites `/api/payload.json` to the S3 file and every other path to `index.html`.

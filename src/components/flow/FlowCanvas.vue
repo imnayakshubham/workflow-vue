@@ -23,7 +23,6 @@ const emit = defineEmits<{
 const store = useWorkflowStore()
 const { nodes: workflowNodes, positions: draggedPositions } = storeToRefs(store)
 const { setCenter, viewport, onPaneReady, onNodesChange, onNodeDragStop } = useVueFlow()
-
 const measuredHeights = ref<Record<string, number>>({})
 
 onNodesChange((changes) => {
@@ -69,9 +68,7 @@ function centerOnNode(nodeId?: WorkflowId) {
 onPaneReady(() => centerOnNode(props.selectedId))
 watch(() => props.selectedId, centerOnNode)
 
-onNodeDragStop(({ nodes: draggedNodes }) => {
-    draggedNodes.forEach((node) => store.setPosition(node.id, node.position))
-})
+onNodeDragStop(({ nodes: draggedNodes }) => store.moveNodes(draggedNodes))
 
 function onEdgeAdd(parentId: string) {
     const parent = findNode(workflowNodes.value, parentId)

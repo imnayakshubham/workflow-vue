@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, shallowRef, watch } from 'vue'
+import { computed, onMounted, onUnmounted, shallowRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@nuxt/ui/composables'
 import type { WorkflowId, WorkflowNodeFormTypes, WorkflowNodeTypes } from '@/types/workflow'
@@ -28,7 +28,7 @@ const selectedNode = computed(() => {
     return routeNode?.type === 'dateTimeConnector' ? undefined : routeNode
 })
 
-watch([data, routeId], () => {
+watch([data, routeId, selectedNode], () => {
     if (data.value && routeId.value && !selectedNode.value) router.replace('/')
 }, { immediate: true })
 
@@ -58,6 +58,19 @@ function onSave(node: WorkflowNodeTypes) {
 function onDelete(id: WorkflowId) {
     deleteNode.mutate(id, { onSuccess: () => router.push('/') })
 }
+
+function onKeydown(event: KeyboardEvent) {
+    const target = event.target as HTMLElement
+    const isTyping = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
+    if (isTyping || !(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'z') return
+
+    event.preventDefault()
+    if (event.shiftKey) store.redo()
+    else store.undo()
+}
+
+onMounted(() => document.addEventListener('keydown', onKeydown))
+onUnmounted(() => document.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>
@@ -65,6 +78,10 @@ function onDelete(id: WorkflowId) {
         <p v-if="isPending" class="flex h-full items-center justify-center text-gray-500">Loading workflow...</p>
         <p v-else-if="isError" class="flex h-full items-center justify-center text-gray-500">Could not load the workflow.</p>
         <template v-else>
+            <UFieldGroup class="absolute top-4 left-4 z-10 flex gap-2">
+                <UButton icon="i-lucide-undo-2" aria-label="Undo" color="neutral" variant="outline" size="sm" :disabled="!store.canUndo" @click="store.undo()" />
+                <UButton icon="i-lucide-redo-2" aria-label="Redo" color="neutral" variant="outline" size="sm" :disabled="!store.canRedo" @click="store.redo()" />
+            </UFieldGroup>
             <UButton v-if="store.nodes.length === 0" icon="i-lucide-plus" label="Create New Node" class="absolute top-1/2 left-1/2 z-10 -translate-x-1/2 -translate-y-1/2" @click="openCreate()" />
             <FlowCanvas
                 :selected-id="selectedNode?.id"

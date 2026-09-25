@@ -1,9 +1,13 @@
 import { flushPromises, mount } from '@vue/test-utils'
+import { createMemoryHistory, createRouter } from 'vue-router'
 import ui from '@nuxt/ui/vue-plugin'
 import type { Component } from 'vue'
 
+export const titleField = 'input[name="title"]'
+
 export async function mountWithUi(component: Component, props: Record<string, unknown> = {}) {
-    const wrapper = mount(component, { props, global: { plugins: [ui] }, attachTo: document.body })
+    const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: { template: '<div />' } }] })
+    const wrapper = mount(component, { props, global: { plugins: [router, ui] }, attachTo: document.body })
     await flushPromises()
     return wrapper
 }

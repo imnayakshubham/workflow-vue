@@ -3,7 +3,7 @@ import { validateImageFile, validateNodeDraft, validateNodeForm } from '@/utils/
 import { businessHours, comment } from '@/test/fixtures'
 
 describe('validation', () => {
-    it('lists an error for every invalid field in the create form', () => {
+    it('returns one error per invalid field when the create form is empty', () => {
         const errors = validateNodeForm({ title: '', description: 'a'.repeat(201) })
 
         expect(errors).toEqual([
@@ -13,7 +13,7 @@ describe('validation', () => {
         ])
     })
 
-    it('only accepts image files for attachments', () => {
+    it('accepts an image file and rejects any other file type for attachments', () => {
         const image = new File(['x'], 'photo.png', { type: 'image/png' })
         const pdf = new File(['x'], 'document.pdf', { type: 'application/pdf' })
 
@@ -21,7 +21,7 @@ describe('validation', () => {
         expect(validateImageFile(pdf)).toBe('Only image files can be attached')
     })
 
-    it('does not allow business hours that end before they start', () => {
+    it('rejects a business hours row whose end time is not after its start time', () => {
         const backwardsHours = {
             ...businessHours,
             data: { ...businessHours.data, times: [{ day: 'mon', startTime: '18:00', endTime: '09:00' }] },
@@ -30,7 +30,7 @@ describe('validation', () => {
         expect(validateNodeDraft(backwardsHours)).toEqual([{ name: 'times.0', message: 'Start time must be before end time' }])
     })
 
-    it('does not allow an empty comment', () => {
+    it('rejects a comment node whose comment is empty', () => {
         const emptyComment = { ...comment, data: { comment: ' ' } }
 
         expect(validateNodeDraft(emptyComment)).toEqual([{ name: 'comment', message: 'Comment cannot be empty' }])

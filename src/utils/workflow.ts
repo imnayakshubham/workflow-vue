@@ -1,5 +1,13 @@
 import type { Edge, Node, XYPosition } from '@vue-flow/core'
-import type { WorkflowId, WorkflowNodeTypes } from '@/types/workflow'
+import type {
+    WorkflowDateTimeConnectorNodeTypes,
+    WorkflowDateTimeNodeTypes,
+    WorkflowId,
+    WorkflowNodeFormTypes,
+    WorkflowNodeTypes,
+} from '@/types/workflow'
+
+const WEEK_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
 
 const DEFAULT_TITLES: Record<WorkflowNodeTypes['type'], string> = {
     trigger: 'Trigger',
@@ -126,4 +134,57 @@ export function findLastLeaf(nodes: WorkflowNodeTypes[]) {
 
 export function cloneNode(node: WorkflowNodeTypes): WorkflowNodeTypes {
     return JSON.parse(JSON.stringify(node))
+}
+
+function newId() {
+    return crypto.randomUUID().slice(0, 6)
+}
+
+export function buildNodes(form: Required<WorkflowNodeFormTypes>, parentId: WorkflowId) {
+    const base = {
+        id: newId(),
+        parentId,
+        name: form.title.trim(),
+        description: form.description.trim() || undefined,
+    }
+
+    switch (form.type) {
+        case 'sendMessage': {
+            const node: WorkflowNodeTypes = { ...base, type: 'sendMessage', data: { payload: [] } }
+            return { newNodes: [node], attachChildrenTo: node.id }
+        }
+
+        case 'addComment': {
+            const node: WorkflowNodeTypes = { ...base, type: 'addComment', data: { comment: '' } }
+            return { newNodes: [node], attachChildrenTo: node.id }
+        }
+
+        case 'businessHours': {
+            const successBranch: WorkflowDateTimeConnectorNodeTypes = {
+                id: newId(),
+                parentId: base.id,
+                name: 'Success',
+                type: 'dateTimeConnector',
+                data: { connectorType: 'success' },
+            }
+            const failureBranch: WorkflowDateTimeConnectorNodeTypes = {
+                id: newId(),
+                parentId: base.id,
+                name: 'Failure',
+                type: 'dateTimeConnector',
+                data: { connectorType: 'failure' },
+            }
+            const businessHours: WorkflowDateTimeNodeTypes = {
+                ...base,
+                type: 'dateTime',
+                data: {
+                    times: WEEK_DAYS.map((day) => ({ day, startTime: '09:00', endTime: '17:00' })),
+                    connectors: [successBranch.id, failureBranch.id],
+                    timezone: 'UTC',
+                    action: 'businessHours',
+                },
+            }
+            return { newNodes: [businessHours, successBranch, failureBranch], attachChildrenTo: successBranch.id }
+        }
+    }
 }

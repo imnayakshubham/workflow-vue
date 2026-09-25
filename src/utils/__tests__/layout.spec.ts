@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import { calculateNodePositions } from '@/utils/layout'
-import { payload } from '@/test/fixtures'
+import { awayMessage, businessHours, failureBranch, payload, trigger } from '@/test/fixtures'
 
 describe('calculateNodePositions', () => {
-    it('places each child below its parent', () => {
+    it('puts every child in a row below its parent', () => {
         const positions = calculateNodePositions(payload)
 
-        expect(positions['d09c08']?.y).toBeGreaterThan(positions['1']?.y ?? 0)
-        expect(positions['b6a0c1']?.y).toBeGreaterThan(positions['28c4b9']?.y ?? 0)
+        expect(positions[businessHours.id]?.y).toBeGreaterThan(positions[String(trigger.id)]?.y ?? 0)
+        expect(positions[awayMessage.id]?.y).toBeGreaterThan(positions[failureBranch.id]?.y ?? 0)
     })
 
-    it('uses the measured card height to place the next row', () => {
-        const positions = calculateNodePositions(payload, { 1: 150 })
+    it('starts the next row below the measured height of the card above it', () => {
+        const positions = calculateNodePositions(payload, { [trigger.id]: 150 })
 
-        expect(positions['d09c08']?.y).toBe(150 + 72)
+        expect(positions[businessHours.id]?.y).toBe(150 + 72)
     })
 })
