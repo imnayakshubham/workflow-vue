@@ -3,13 +3,14 @@ import { flushPromises } from '@vue/test-utils'
 import CreateNodeModal from '@/components/flow/CreateNodeModal.vue'
 import { find, mountWithUi, titleField, typeInto } from '@/test/mount'
 
+Element.prototype.scrollIntoView = () => {}
+
 async function chooseType(label: string) {
-    find('button[role="combobox"]').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    find('button[aria-haspopup="listbox"]').click()
     await flushPromises()
 
-    const options = [...document.body.querySelectorAll('[role="option"]')]
-    const option = options.find((element) => element.textContent?.includes(label))
-    option?.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }))
+    const options = [...document.body.querySelectorAll<HTMLElement>('[role="option"]')]
+    options.find((element) => element.textContent?.includes(label))?.click()
     await flushPromises()
 }
 

@@ -38,7 +38,7 @@ function onSubmit() {
                 </UFormField>
 
                 <UFormField label="Type of Node" name="type" required>
-                    <USelect v-model="form.type" :items="NODE_TYPE_ITEMS" placeholder="Select a type" class="w-full" />
+                    <USelectMenu v-model="form.type" :items="NODE_TYPE_ITEMS" value-key="value" placeholder="Select a type" class="w-full" />
                 </UFormField>
 
                 <div class="flex justify-end gap-2">
