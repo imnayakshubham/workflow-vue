@@ -20,7 +20,7 @@ const isConfirmOpen = shallowRef(false)
 const title = computed(() => props.node && getTitle(props.node))
 
 watch(() => props.node, (node) => {
-    draft.value = node && { ...cloneNode(node), name: getTitle(node) }
+    draft.value = node && { ...cloneNode(node), name: getTitle(node), description: getDescription(node) }
 }, { immediate: true })
 
 function save() {
@@ -68,7 +68,7 @@ function confirmDelete() {
                 </UFormField>
 
                 <UFormField label="Description" name="description">
-                    <UTextarea v-model="draft.description" :placeholder="getDescription(node)" :rows="2" autoresize class="w-full" />
+                    <UTextarea v-model="draft.description" placeholder="Description here" class="w-full" />
                 </UFormField>
 
                 <SendMessageEditor v-if="draft.type === 'sendMessage'" v-model="draft.data" />
