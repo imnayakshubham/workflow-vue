@@ -80,7 +80,7 @@ async function upload(event: Event) {
                     class="flex-1"
                     @update:model-value="updateText(item.index, String($event))"
                 />
-                <UButton icon="i-lucide-trash-2" color="neutral" variant="ghost" aria-label="Remove message" @click="remove(item.index)" />
+                <UButton icon="i-lucide-trash-2" color="error" variant="ghost" aria-label="Remove message" @click="remove(item.index)" />
             </div>
         </UFormField>
         <UButton icon="i-lucide-plus" label="Add message" size="sm" variant="soft" @click="addText" />

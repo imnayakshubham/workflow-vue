@@ -16,8 +16,8 @@ const data = defineModel<WorkflowCommentNodeTypes['data']>({ required: true })
             />
             <UButton
                 icon="i-lucide-trash-2"
-                color="neutral"
-                variant="ghost"
+                color="error"
+                variant="soft"
                 aria-label="Remove comment"
                 :disabled="!data.comment"
                 @click="data = { comment: '' }"

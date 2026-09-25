@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue'
-import { defineStore } from 'pinia'
+import { acceptHMRUpdate, defineStore } from 'pinia'
 import type { XYPosition } from '@vue-flow/core'
 import type { WorkflowId, WorkflowNodeFormTypes, WorkflowNodeTypes } from '@/types/workflow'
 import { buildNodes } from '@/utils/workflow'
@@ -86,3 +86,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
     return { nodes, positions, canUndo, canRedo, addNode, updateNode, removeNode, moveNodes, rollback, undo, redo }
 })
+
+if (import.meta.hot) {
+    import.meta.hot.accept(acceptHMRUpdate(useWorkflowStore, import.meta.hot))
+}

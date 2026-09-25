@@ -14,6 +14,9 @@ import AddEdge from './AddEdge.vue'
 const DRAWER_WIDTH = 448
 
 const props = defineProps<{ selectedId?: WorkflowId }>()
+
+const fitViewOnInit = props.selectedId === undefined
+
 const emit = defineEmits<{
     add: [parentId: WorkflowId]
     select: [id: string]
@@ -101,7 +104,7 @@ function onEdgeAdd(parentId: string) {
         :select-nodes-on-drag="false"
         :edges-focusable="false"
         :delete-key-code="null"
-        :fit-view-on-init="selectedId === undefined"
+        :fit-view-on-init="fitViewOnInit"
     >
         <Background pattern-color="#aaa" :gap="16" />
 
