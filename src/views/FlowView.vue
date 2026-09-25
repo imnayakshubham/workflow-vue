@@ -49,7 +49,10 @@ function onCreate(form: Required<WorkflowNodeFormTypes>) {
 function onSave(node: WorkflowNodeTypes) {
     updateNode.mutate(node, {
         onSuccess: () => {
-            toast.add({ title: 'Node saved', color: 'success' })
+            toast.add({
+                 title: 'Node saved', color: 'success',
+                 duration:2000 
+                })
             router.push('/')
         },
     })
